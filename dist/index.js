@@ -17,10 +17,9 @@ const Post_1 = require("./entities/Post");
 const mikro_orm_config_1 = __importDefault(require("./mikro-orm.config"));
 const main = () => __awaiter(void 0, void 0, void 0, function* () {
     const orm = yield core_1.MikroORM.init(mikro_orm_config_1.default);
+    yield orm.getMigrator().up();
     const post = orm.em.create(Post_1.Post, { title: 'my 1st post' });
     yield orm.em.persistAndFlush(post);
-    console.log("-----------------sql2");
-    yield orm.em.nativeInsert(Post_1.Post, { title: 'my 2nd post' });
 });
 main().catch(err => {
     console.error(err);
