@@ -1,3 +1,4 @@
+import "reflect-metadata"; //req'd for typegraphql to work
 import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
 import { Post } from "./entities/Post";
@@ -6,7 +7,8 @@ import express from 'express';
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { HelloResolver } from "./resolvers/hello";
-
+import { PostResolver } from "./resolvers/post";
+//60.45
 const main= async ()=>{
     const orm= await MikroORM.init(microConfig); //connect to db
     await orm.getMigrator().up(); //autorun migrations, itll do this b4 anything after
@@ -15,9 +17,10 @@ const main= async ()=>{
     const app= express(); //create instance of express
     const apolloServer= new ApolloServer({ 
         schema: await buildSchema({
-            resolvers:[HelloResolver],
+            resolvers:[HelloResolver,PostResolver],
             validate:false
-        })
+        }),
+        context:()=>({em: orm.em}) //to query everything from db & return em, u need access to em. context is a special obj accessible by all resolvers
     });
     apolloServer.applyMiddleware({app}); //creates a graphql endpt with express!
     
