@@ -1,14 +1,15 @@
 import "reflect-metadata"; //req'd for typegraphql to work
 import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
-import { Post } from "./entities/Post";
+// import { Post } from "./entities/Post";
 import microConfig from "./mikro-orm.config";
 import express from 'express';
 import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
-//60.45
+
+//69.30
 const main= async ()=>{
     const orm= await MikroORM.init(microConfig); //connect to db
     await orm.getMigrator().up(); //autorun migrations, itll do this b4 anything after
