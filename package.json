@@ -9,15 +9,18 @@
     "start": "node dist/index.js",
     "start2": "ts-node src/index.ts",
     "dev2": "nodemon --exec ts-node src/index.ts",
-    "serverstart": "pg_ctl -D /usr/local/var/postgres start",
-    "migration:create": "mikro-orm migration:create"
+    "migration:create": "mikro-orm migration:create",
+    "sdwatch": "pg_ctl -D /usr/local/var/postgres start && redis-server /usr/local/etc/redis.conf && tsc -w"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/connect-redis": "^0.0.14",
     "@types/express": "^4.17.8",
+    "@types/express-session": "^1.17.0",
     "@types/node": "^14.11.8",
+    "@types/redis": "^2.8.28",
     "nodemon": "^2.0.4",
     "reflect-metadata": "^0.1.13",
     "ts-node": "^9.0.0",
@@ -30,9 +33,13 @@
     "@mikro-orm/postgresql": "^4.1.0",
     "apollo-server-express": "^2.18.2",
     "argon2": "^0.27.0",
+    "class-validator": "^0.12.2",
+    "connect-redis": "^5.0.0",
     "express": "^4.17.1",
+    "express-session": "^1.17.1",
     "graphql": "^15.3.0",
     "pg": "^8.4.1",
+    "redis": "^3.0.2",
     "type-graphql": "^1.1.0"
   },
   "mikro-orm": {

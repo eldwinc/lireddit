@@ -8,20 +8,47 @@ import { ApolloServer } from "apollo-server-express";
 import { buildSchema } from "type-graphql";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
+import { UserResolver } from "./resolvers/user";
+import redis from 'redis';
+import session from 'express-session';
+import connectRedis from 'connect-redis';
+import { MyContext } from "./types";
 
-//69.30
+
+//2.09.00
 const main= async ()=>{
     const orm= await MikroORM.init(microConfig); //connect to db
     await orm.getMigrator().up(); //autorun migrations, itll do this b4 anything after
     
-    //graphql server setup w typegraphql schema
     const app= express(); //create instance of express
-    const apolloServer= new ApolloServer({ 
+    
+    const RedisStore = connectRedis(session); //order u add express middleware is the order theyll run
+    const redisClient = redis.createClient() //here session runs b4 apollo as itll be running inside apollo, thus it must go first
+    app.use(
+        session({
+            name: 'qid', //name of ur cookie
+            store: new RedisStore({ //tells session we're using redis
+                client: redisClient,
+                disableTouch:true //each time user makes action, sys detects & touches session to tellem to keep session alive. disabling means session is alive 4ever
+            }),
+            cookie: { //f yur cookie dont work, ensure request.credentials is set to include inst of omit in the localhost page settings
+                httpOnly:true, //cookie cant be accessed from your frontend javascript code
+                maxAge: 1000*60*60*24*365*2, //2y
+                sameSite:'lax', //protects csrf token
+                secure:__prod__ //cookie can only be used in https, but in dev we're on localhost so we only want this in prod
+            },
+            saveUninitialized:false,
+            secret: 'qweqwe', //what youll sign (encrypt) ur cookie with
+            resave: false, //stops sesion from continually pinging redis
+        }) //session can be accessed by the resolvers by inputting req & res into ApolloServer's context func
+    );
+
+    const apolloServer= new ApolloServer({ //graphql server setup w typegraphql schema
         schema: await buildSchema({
-            resolvers:[HelloResolver,PostResolver],
-            validate:false
+            resolvers:[HelloResolver,PostResolver,UserResolver],
+            validate:false,
         }),
-        context:()=>({em: orm.em}) //to query everything from db & return em, u need access to em. context is a special obj accessible by all resolvers
+        context:({req,res}):MyContext=>({em: orm.em,req,res}), //to query everything from db & return em, u need access to em. context is a special obj accessible by all resolvers
     });
     apolloServer.applyMiddleware({app}); //creates a graphql endpt with express!
     
