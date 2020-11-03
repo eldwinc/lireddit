@@ -12,10 +12,8 @@ import { UserResolver } from "./resolvers/user";
 import redis from 'redis';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
-import { MyContext } from "./types";
+import cors from "cors";
 
-
-//2.09.00
 const main= async ()=>{
     const orm= await MikroORM.init(microConfig); //connect to db
     await orm.getMigrator().up(); //autorun migrations, itll do this b4 anything after
@@ -24,6 +22,16 @@ const main= async ()=>{
     
     const RedisStore = connectRedis(session); //order u add express middleware is the order theyll run
     const redisClient = redis.createClient() //here session runs b4 apollo as itll be running inside apollo, thus it must go first
+    
+    //cors
+    app.use(
+        cors({
+            origin:"http://localhost:3000",
+            credentials:true
+        })
+    );
+
+    //sessions
     app.use(
         session({
             name: 'qid', //name of ur cookie
@@ -48,9 +56,9 @@ const main= async ()=>{
             resolvers:[HelloResolver,PostResolver,UserResolver],
             validate:false,
         }),
-        context:({req,res}):MyContext=>({em: orm.em,req,res}), //to query everything from db & return em, u need access to em. context is a special obj accessible by all resolvers
+        context:({req,res})=> ({em: orm.em,req,res}), //to query everything from db & return em, u need access to em. context is a special obj accessible by all resolvers
     });
-    apolloServer.applyMiddleware({app}); //creates a graphql endpt with express!
+    apolloServer.applyMiddleware({app, cors:false}); //creates a graphql endpt with express!
     
     app.listen(4000,()=>{console.log('server started on localhost:4000')}); //start server on port4k
     //Test Express

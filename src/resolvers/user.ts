@@ -1,7 +1,9 @@
+//03.11.03
 import { User } from "../entities/User";
 import { MyContext } from "../types";
 import { Arg, Ctx, Field, InputType, Mutation, ObjectType, Query, Resolver } from "type-graphql";
 import argon2 from "argon2";
+import { EntityManager } from "@mikro-orm/postgresql";
 
 @InputType() //used for inputs
 class UsernamePasswordInput{
@@ -57,14 +59,23 @@ export class UserResolver{
             }
         }
         const hashedPassword= await argon2.hash(options.password);
-        const user= em.create(User,{
-            username:options.username,
-            password:hashedPassword
-        });
+        // const user= em.create(User,{
+        //     username:options.username,
+        //     password:hashedPassword
+        // });
+        let user;
         try {
-            await em.persistAndFlush(user);
+            const result= await (em as EntityManager).createQueryBuilder(User).getKnexQuery().insert({
+                username:options.username,
+                password:hashedPassword,
+                created_at: new Date(), //adding these explicitly as we're using Knex, not MicroORM here
+                updated_at: new Date() //microORM also adds underscores for us but Knex doesnt so we manually gotta do it
+            }) //_ as _ is called casting (set it as). we're using QueryBuilder bc persistNFlush is causing issues
+            .returning("*"); //return all fields
+            user= result[0];
+            // await em.persistAndFlush(user); //breaking so we're using Knex instead (using SQL to create our queries ourselves)
         } catch (error) {
-            // console.log("Message: ",error.message)
+            console.log("Error: ",error);
             if(error.code==="23505"){ 
                 return {
                     errors:[{
@@ -73,8 +84,8 @@ export class UserResolver{
                     }]
                 }
             }
-            
         }
+        console.log("i am user: ",user);
         req.session.userId=user.id; //adding req in Ctx &this line will autolog u in after registering
         return {user}; //if there wasnt a catch, func would try to return a null for this obj. if this obj isnt nullable, then thered be an error saying tried to return non-nullable obj
     }
